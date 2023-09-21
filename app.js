@@ -38,7 +38,7 @@ client.on("messageCreate", async (message) => {
         link.indexOf("format=") + 7,
         link.indexOf("&name"),
       );
-      attachment.setName(fileName + "." + fileExtension);
+      attachment.setName(`${fileName}.${fileExtension}`);
       attachments.push(attachment);
     });
     /* const attachment = new AttachmentBuilder(

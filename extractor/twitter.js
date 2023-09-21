@@ -13,55 +13,56 @@ async function twitterExtract(url) {
     waitUntil: "networkidle2",
   });
 
-  const imagesLinks = await page.evaluate((url) => {
-    const imagesLinks = [];
+  const imagesLinks = await page.evaluate((param) => {
+    const links = [];
     const imageRedirectLinks = document.querySelectorAll("a:has(img)");
     imageRedirectLinks.forEach((redirectLink) => {
-      if (redirectLink.href.slice(0, -8) === url) {
+      if (redirectLink.href.slice(0, -8) === param) {
         const image = redirectLink.querySelector("img");
         const imageLink =
-          image.src.slice(0, image.src.indexOf(`&name=`)) + `&name=orig`;
-        imagesLinks.push(imageLink);
+          `${image.src.slice(0, image.src.indexOf(`&name=`))}&name=orig`;
+        links.push(imageLink);
       }
     });
-    return Promise.resolve(imagesLinks);
+    return Promise.resolve(links);
   }, url);
 
-  imageLinksWebpRemoved = await webpModify(imagesLinks);
+  
   async function webpModify(links) {
     if (imagesLinks.length > 0) {
       const newLinks = await Promise.all(
         imagesLinks.map(async (link) => {
           if (link.includes("webp")) {
-            const page = await browser.newPage();
+            const pageJPG = await browser.newPage();
 
             const urljpg = link.replace("webp", "jpg");
             const [responsejpg] = await Promise.all([
-              page.waitForNavigation(),
-              page.goto(urljpg),
+              pageJPG.waitForNavigation(),
+              pageJPG.goto(urljpg),
             ]);
-            if (responsejpg.status() == 200) {
+            if (responsejpg.status() === 200) {
               return Promise.resolve(urljpg);
             }
 
-            const page2 = await browser.newPage();
+            const pagePNG = await browser.newPage();
             const urlpng = link.replace("webp", "png");
             const [responsepng] = await Promise.all([
-              page2.waitForNavigation(),
-              page2.goto(urlpng),
+              pagePNG.waitForNavigation(),
+              pagePNG.goto(urlpng),
             ]);
-            if (responsepng.status() == 200) {
+            if (responsepng.status() === 200) {
               return Promise.resolve(urlpng);
-            } else return Promise.resolve(link);
-          } else return Promise.resolve(link);
+            } 
+            return Promise.resolve(link);
+          }  return Promise.resolve(link);
         }),
       );
       return Promise.resolve(newLinks);
-    } else {
+    } 
       return Promise.resolve(links);
-    }
+    
   }
-
+  const imageLinksWebpRemoved = await webpModify(imagesLinks);
   await browser.close();
   return imageLinksWebpRemoved;
 }
